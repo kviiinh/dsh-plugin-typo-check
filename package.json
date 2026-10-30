@@ -1,0 +1,40 @@
+{
+  "name": "dsh-plugin-typo-check",
+  "version": "0.2.0",
+  "description": "在输入框工具栏加一个「查错」按钮：把草稿交给任意 OpenAI 兼容的来源，只找错别字并标黄，逐条一键替换；支持多来源按顺序回退，每行可配系统提示词、max_tokens、思考模式。",
+  "type": "module",
+  "main": "index.js",
+  "license": "MIT",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "cordis",
+    "cordis-plugin",
+    "typo",
+    "proofread",
+    "chinese"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  }
+}

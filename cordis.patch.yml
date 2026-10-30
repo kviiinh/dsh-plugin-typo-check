@@ -1,0 +1,5 @@
+# One row, so installing this package is all it takes to compose the plugin.
+# The row id is the loader identity; the package name is what Node resolves.
+- insert:
+    - id: dsh-typo-check
+      name: dsh-plugin-typo-check

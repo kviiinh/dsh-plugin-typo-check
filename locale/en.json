@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Composer typo check",
+    "description": "Adds a Check button to the composer toolbar: send the current draft to any OpenAI-compatible endpoint and get back only typos (wrong, missing or extra characters and homophone look-alikes), highlighted in the composer and listed in a floating card where each one can be replaced with a click. No rewriting, no style edits. Several sources are tried in order, each with its own system prompt, max_tokens and thinking switch, and every row can be tested from the dialog."
+  }
+}

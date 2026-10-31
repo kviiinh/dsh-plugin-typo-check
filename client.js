@@ -675,7 +675,10 @@ window.__ModuleLoader__.load({
       panel: {
         position: 'absolute',
         left: 0,
-        right: 0,
+        // 70px of clear space on the right: the "back to latest" round button
+        // floats over the composer card's right end, and a full-width card would
+        // sit underneath it.
+        right: 70,
         bottom: 0,
         marginBottom: 8,
         zIndex: 20,

@@ -690,7 +690,9 @@ window.__ModuleLoader__.load({
         padding: '10px 12px',
         borderRadius: 10,
         border: '1px solid var(--dsw-alias-border-l1)',
-        background: 'var(--dsw-alias-bg-overlay)',
+        // The raised surface, not the overlay tint: the card should read as a
+        // white panel in the light theme (and follow the theme in the dark one).
+        background: 'var(--dsw-alias-bg-layer-1)',
         boxShadow: '0 12px 32px rgba(0, 0, 0, 0.24)',
         fontSize: 12,
       },

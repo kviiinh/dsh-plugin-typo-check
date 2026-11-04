@@ -155,6 +155,10 @@ window.__ModuleLoader__.load({
       source: '',
       truncated: false,
       checkedAt: 0,
+      /** When the running check started; 0 when nothing is running. */
+      startedAt: 0,
+      /** How long the last finished check took, in milliseconds. */
+      elapsed: 0,
     })
 
     /** Per-session check results; keys are stringified session ids. */
@@ -191,6 +195,8 @@ window.__ModuleLoader__.load({
       entry.truncated = false
       entry.source = ''
       entry.checkedAt = 0
+      entry.startedAt = 0
+      entry.elapsed = 0
       entry.status = 'idle'
       entry.error = ''
       entry.failures = []
@@ -284,6 +290,8 @@ window.__ModuleLoader__.load({
       entry.error = ''
       entry.failures = []
       entry.banner = ''
+      entry.startedAt = Date.now()
+      entry.elapsed = 0
       emit()
       try {
         const payload = await call(CHECK_ROUTE, {
@@ -297,11 +305,13 @@ window.__ModuleLoader__.load({
         entry.truncated = Boolean(payload?.truncated)
         entry.source = [payload?.source?.name, payload?.source?.model].filter(Boolean).join(' · ')
         entry.checkedAt = Date.now()
+        entry.elapsed = entry.startedAt > 0 ? Date.now() - entry.startedAt : 0
         entry.status = 'done'
       } catch (error) {
         if (entry.status !== 'checking') return
         const body = error instanceof Error ? error.payload : null
         const kind = body?.kind
+        entry.elapsed = entry.startedAt > 0 ? Date.now() - entry.startedAt : 0
         entry.status = 'error'
         entry.error = error instanceof Error ? error.message : String(error)
         entry.failures = Array.isArray(body?.failures) ? body.failures : []
@@ -655,11 +665,19 @@ window.__ModuleLoader__.load({
         fontSize: 13,
         cursor: 'pointer',
       },
-      /** The whole toolbar group: status word, then the button. */
+      /** The whole toolbar group: status word, stopwatch, then the button. */
       toolbar: {
         display: 'inline-flex',
         alignItems: 'center',
         gap: 8,
+      },
+      /** The stopwatch left of the check button: same line, quiet colour. */
+      timer: {
+        fontSize: 12,
+        lineHeight: '20px',
+        color: 'var(--dsw-alias-label-secondary)',
+        fontVariantNumeric: 'tabular-nums',
+        whiteSpace: 'nowrap',
       },
       banner: {
         fontSize: 12,
@@ -1111,6 +1129,20 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * One elapsed span, written the way a stopwatch reads: tenths of a second
+     * below a minute, whole seconds above it.
+     *
+     * @param ms - elapsed milliseconds; anything unusable reads as zero.
+     * @returns the display text, e.g. `1.4s` or `2m 05s`.
+     */
+    function formatElapsed(ms) {
+      const safe = Number.isFinite(ms) && ms > 0 ? ms : 0
+      if (safe < 60_000) return `${(safe / 1000).toFixed(1)}s`
+      const total = Math.round(safe / 1000)
+      return `${Math.floor(total / 60)}m ${String(total % 60).padStart(2, '0')}s`
+    }
+
+    /**
      * The composer-toolbar button, with the status word to its left.
      *
      * @param props - slot props: `useInput`, `sessionId`.
@@ -1123,6 +1155,27 @@ window.__ModuleLoader__.load({
       const empty = typeof draft !== 'string' || draft.trim() === ''
       const disabled = busy || empty
       const label = empty ? '先写点什么，再点查错' : '检查错别字（只找错别字，不做润色）'
+      // The stopwatch. While the request is out it counts live, driven by this
+      // interval; once it lands, `entry.elapsed` holds the final number and the
+      // text stops changing. Either way it disappears with the entry — sending
+      // or emptying the composer clears that (see `IssuePanel`).
+      const [, tick] = React.useState(0)
+      React.useEffect(() => {
+        if (!busy) return undefined
+        const id = globalThis.setInterval(() => tick((value) => value + 1), 100)
+        return () => globalThis.clearInterval(id)
+      }, [busy])
+      const elapsed = busy ? Date.now() - entry.startedAt : entry.elapsed
+      const timer = busy || entry.elapsed > 0
+        ? h(
+          'span',
+          {
+            style: S.timer,
+            'aria-label': busy ? '正在查错，已用时' : '上次查错用时',
+          },
+          formatElapsed(elapsed),
+        )
+        : null
       const button = h(
         'button',
         {
@@ -1145,6 +1198,7 @@ window.__ModuleLoader__.load({
         entry.banner === ''
           ? null
           : withTip(entry.error === '' ? entry.banner : entry.error, h('span', { style: S.banner }, entry.banner)),
+        timer,
         // Same primitive, side and delay as the composer's send button, so the
         // bubble looks identical without copying its stylesheet.
         Tooltip === null
